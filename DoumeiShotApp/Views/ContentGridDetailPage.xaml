@@ -1,0 +1,31 @@
+﻿<Page
+    x:Class="DoumeiShotApp.Views.ContentGridDetailPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
+    xmlns:models="using:DoumeiShotApp.Models"
+    mc:Ignorable="d">
+
+    <Grid x:Name="ContentArea">
+        <ScrollViewer
+            IsTabStop="True">
+
+            <StackPanel
+                x:Name="contentPanel">
+
+                <TextBlock
+                    x:Uid="Shell_PreviewTitle"
+                    Margin="{StaticResource SmallTopMargin}"
+                    Style="{ThemeResource SubtitleTextBlockStyle}"
+                     />
+
+                <Image Source="{x:Bind ViewModel.FramedImage}" MaxHeight="400" MaxWidth="400"/>
+                <Button x:Uid="Shell_Upload" Command="{x:Bind ViewModel.UploadCommand}" />
+                <Button x:Uid="Shell_Cancel" Command="{x:Bind ViewModel.CancelCommand}" />
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>
