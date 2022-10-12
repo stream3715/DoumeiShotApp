@@ -4,6 +4,8 @@ using System.Text;
 using DoumeiShotApp.Core.Contracts.Services;
 
 using Newtonsoft.Json;
+using SkiaSharp;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace DoumeiShotApp.Core.Services;
 
@@ -11,19 +13,37 @@ public class ImageEditService : IImageEditService
 {
     public string OverlayImage(string baseImagePath, string coverImagePath)
     {
-        var baseImage = new Bitmap(baseImagePath);
-        var coverImage = new Bitmap(coverImagePath);
-        var newImage = new Bitmap(baseImage);
+        var outPath = Path.GetDirectoryName(baseImagePath);
+        var baseName = Path.GetFileName(baseImagePath);
 
-        Graphics g = Graphics.FromImage(newImage);
-        g.DrawImage(coverImage, 0, 0, coverImage.Width, coverImage.Height);
+        using var stream = File.Create(outPath + "\\F_" + baseName);
+        using var baseImage = SKBitmap.Decode(baseImagePath);
+        using var coverImage = SKBitmap.Decode(coverImagePath);
+        using var newImage = new SKBitmap(coverImage.Width, coverImage.Height);
+        using var surface = SKSurface.Create(new SKImageInfo(newImage.Width, newImage.Height));
 
-        g.Dispose();
-        baseImage.Dispose();
-        coverImage.Dispose();
+        var canvas = surface.Canvas;
+        var scale = CalcScale(baseImage.Width, baseImage.Height, coverImage.Width, coverImage.Height);
 
-        newImage.Save(baseImagePath + ".frame.jpg", System.Drawing.Imaging.ImageFormat.Jpeg);
-        newImage.Dispose();
-        return baseImagePath + ".frame.jpg";
+        var x = (newImage.Width - (scale * baseImage.Width)) / 2;
+        var y = (newImage.Height - (scale * baseImage.Height)) / 2;
+
+        var y_offset = 50;
+
+        SKRect destRect = new(0, y_offset, scale * baseImage.Width, y_offset + scale * baseImage.Height);
+
+        canvas.DrawBitmap(baseImage, destRect);
+        canvas.DrawBitmap(coverImage, 0, 0);
+        canvas.Flush();
+
+        var outImageData = surface.Snapshot().Encode(SKEncodedImageFormat.Jpeg, 100);
+        outImageData.SaveTo(stream);
+
+        return outPath + "\\F_" + baseName;
+    }
+
+    private static float CalcScale(int width, int height, int targetWidth, int targetHeight)
+    {
+        return Math.Min((float)targetWidth / width, (float)targetHeight / height);
     }
 }
