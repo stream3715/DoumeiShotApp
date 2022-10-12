@@ -1,11 +1,5 @@
-﻿using System.Drawing;
-using System.Text;
-
-using DoumeiShotApp.Core.Contracts.Services;
-
-using Newtonsoft.Json;
+﻿using DoumeiShotApp.Core.Contracts.Services;
 using SkiaSharp;
-using static System.Formats.Asn1.AsnWriter;
 
 namespace DoumeiShotApp.Core.Services;
 
