@@ -16,6 +16,7 @@ namespace DoumeiShotApp.ViewModels;
 
 public class ContentGridViewModel : ObservableRecipient, INavigationAware
 {
+    private readonly IWatchingFolderService _watchingFolderService;
     private readonly INavigationService _navigationService;
     private readonly ITakenPhotoService _takenPhotoService;
 
@@ -30,12 +31,14 @@ public class ContentGridViewModel : ObservableRecipient, INavigationAware
     {
         _navigationService = navigationService;
         _takenPhotoService = takenPhotoService;
+        _watchingFolderService = watchingFolderService;
 
         ItemClickCommand = new RelayCommand<TakenPhoto>(OnItemClick);
     }
 
     public async void OnNavigatedTo(object parameter)
     {
+        await _watchingFolderService.InitializeAsync();
         await UpdateGridList();
     }
 
