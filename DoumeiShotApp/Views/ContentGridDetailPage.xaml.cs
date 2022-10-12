@@ -2,7 +2,7 @@
 
 using DoumeiShotApp.Contracts.Services;
 using DoumeiShotApp.ViewModels;
-
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 
@@ -19,6 +19,11 @@ public sealed partial class ContentGridDetailPage : Page
     {
         ViewModel = App.GetService<ContentGridDetailViewModel>();
         InitializeComponent();
+    }
+
+    private void ContentGridDetailPage_OnLoaded(object sender, RoutedEventArgs e)
+    {
+        ViewModel.XamlRoot = Content.XamlRoot;
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -38,10 +43,5 @@ public sealed partial class ContentGridDetailPage : Page
                 navigationService.SetListDataItemForNextConnectedAnimation(ViewModel.Item);
             }
         }
-    }
-
-    private void Button_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
-    {
-
     }
 }

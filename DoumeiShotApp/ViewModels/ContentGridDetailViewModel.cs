@@ -11,6 +11,11 @@ using Windows.Storage.Pickers;
 using CommunityToolkit.Mvvm.Input;
 using System.Windows.Input;
 using DoumeiShotApp.Services;
+using Microsoft.UI.Xaml.Controls;
+using System.Diagnostics;
+using Microsoft.UI.Xaml;
+using System.Reflection;
+using Microsoft.Windows.ApplicationModel.Resources;
 
 namespace DoumeiShotApp.ViewModels;
 
@@ -20,9 +25,21 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
     private readonly ITakenPhotoService _takenPhotoService;
     private readonly IImageEditService _imageEditService;
     private readonly IS3Service _s3Service;
+    private readonly ResourceLoader _resourceLoader;
+
     private TakenPhoto? _item;
+    
     private BitmapImage _framedImage;
     private string _framedImagePath;
+
+    private string _uploadButtonText;
+    private ICommand? _uploadButtonCommand;
+
+    public XamlRoot? XamlRoot
+    {
+        get;
+        set;
+    }
 
     public TakenPhoto? Item
     {
@@ -30,9 +47,10 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
         set => SetProperty(ref _item, value);
     }
 
-    public ICommand UploadCommand
+    public ICommand? UploadCommand
     {
-        get;
+        get => _uploadButtonCommand;
+        internal set => SetProperty(ref _uploadButtonCommand, value);
     }
 
     public ICommand CancelCommand
@@ -40,17 +58,29 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
         get;
     }
 
+    public string ButtonUploadContent
+    {
+        get => _uploadButtonText;
+        set => SetProperty(ref _uploadButtonText, value);
+    }
+
     public ContentGridDetailViewModel(ITakenPhotoService takenPhotoService, IImageEditService imageEditService, INavigationService navigationService, IS3Service s3Service)
     {
+        _resourceLoader = new ResourceLoader();
+
         _takenPhotoService = takenPhotoService;
         _imageEditService = imageEditService;
         _navigationService = navigationService;
         _s3Service = s3Service;
 
         _framedImage = new BitmapImage();
+        _framedImagePath = string.Empty;
+        _uploadButtonText = string.Empty;
+        XamlRoot = null;
 
-        UploadCommand = new RelayCommand(UploadFramedImage);
-        CancelCommand = new RelayCommand(UploadCancel);
+        UploadCommand = null;
+        CancelCommand = new RelayCommand(ButtonCancel);
+        ButtonUploadContent = string.Empty;
     }
 
     public BitmapImage FramedImage
@@ -63,11 +93,27 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
     {
         if (parameter is string filePath)
         {
+            // Get image data
             var data = await _takenPhotoService.GetContentGridDataAsync();
             Item = data.First(i => i.File!.Path == filePath);
-            _framedImagePath = OverlayImage(filePath, @"C:\Users\strea\Desktop\mcqueen.png");
-            
+
+            // Overlay frame image
+            _framedImagePath = OverlayImage(filePath, @"C:\Users\strea\Downloads\枠 仮@2x.png");
             FramedImage.UriSource = new Uri(_framedImagePath);
+
+            // Check if image is already uploaded
+            var framedFileName = Path.GetFileName(_framedImagePath);
+            if(await _s3Service.CheckFileExists(framedFileName))
+            {
+                Item.IsUploaded = true;
+                ButtonUploadContent = _resourceLoader.GetString("SimpleTextReprint");
+                UploadCommand = new RelayCommand(ReprintFramedUri);
+            } else
+            {
+                Item.IsUploaded = false;
+                ButtonUploadContent = _resourceLoader.GetString("SimpleTextUpload");
+                UploadCommand = new RelayCommand(UploadFramedImage);
+            }
         }
     }
 
@@ -80,12 +126,66 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
         return _imageEditService.OverlayImage(baseImagePath, coverImagePath);
     }
 
-    private void UploadFramedImage()
+    private async void UploadFramedImage()
     {
-        string url = _s3Service.Upload(_framedImagePath);
+        var url = _s3Service.Upload(_framedImagePath);
+
+        var contentDialog = new ContentDialog
+        {
+            Title = "アップロード完了",
+            Content = "アップロードが完了しました。\n" + url,
+            PrimaryButtonText = "開く",
+            CloseButtonText="OK",
+            XamlRoot = XamlRoot!
+        };
+
+        var result = await contentDialog.ShowAsync();
+        if (result == ContentDialogResult.Primary)
+        {
+            OpenUrl(url);
+        }
+        else
+        {
+            ButtonCancel();
+        }
     }
 
-    private void UploadCancel()
+    private async void ReprintFramedUri()
+    {
+        var url = _s3Service.GetPreSignedURLFromFolderPath(_framedImagePath);
+
+        var contentDialog = new ContentDialog
+        {
+            Title = "再取得完了",
+            Content = "URL再取得が完了しました。\n" + url,
+            PrimaryButtonText = "開く",
+            CloseButtonText = "OK",
+            XamlRoot = XamlRoot!
+        };
+
+        var result = await contentDialog.ShowAsync();
+        if (result == ContentDialogResult.Primary)
+        {
+            OpenUrl(url);
+        }
+        else
+        {
+            ButtonCancel();
+        }
+    }
+
+    private static Process? OpenUrl(string url)
+    {
+        ProcessStartInfo pi = new ProcessStartInfo()
+        {
+            FileName = url,
+            UseShellExecute = true,
+        };
+
+        return Process.Start(pi);
+    }
+
+    private void ButtonCancel()
     {
         _navigationService.NavigateTo(typeof(ContentGridViewModel).FullName!);
     }

@@ -6,25 +6,17 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
     xmlns:models="using:DoumeiShotApp.Models"
+    Loaded="ContentGridDetailPage_OnLoaded"
     mc:Ignorable="d">
 
     <Grid x:Name="ContentArea">
         <ScrollViewer
             IsTabStop="True">
 
-            <StackPanel
-                x:Name="contentPanel">
-
-                <TextBlock
-                    x:Uid="Shell_PreviewTitle"
-                    Margin="{StaticResource SmallTopMargin}"
-                    Style="{ThemeResource SubtitleTextBlockStyle}"
-                     />
-
-                <Image Source="{x:Bind ViewModel.FramedImage}" MaxHeight="400" MaxWidth="400"/>
-                <Button x:Uid="Shell_Upload" Command="{x:Bind ViewModel.UploadCommand}" />
-                <Button x:Uid="Shell_Cancel" Command="{x:Bind ViewModel.CancelCommand}" />
-
+            <StackPanel x:Name="contentPanel">
+                <Image Source="{x:Bind ViewModel.FramedImage}" Stretch="Uniform" Margin="{StaticResource SmallLeftRightMargin}" MaxHeight="800"/>
+                <Button x:Uid="Shell_Upload" Command="{x:Bind ViewModel.UploadCommand, Mode=OneWay}" Content="{x:Bind ViewModel.ButtonUploadContent, Mode=OneWay}" Margin="{StaticResource SmallTopMargin}"/>
+                <Button x:Uid="Shell_Cancel" Command="{x:Bind ViewModel.CancelCommand}" Margin="{StaticResource SmallTopBottomMargin}"/>
             </StackPanel>
         </ScrollViewer>
     </Grid>
