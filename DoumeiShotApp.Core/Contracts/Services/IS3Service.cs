@@ -6,5 +6,9 @@ public interface IS3Service
 
     string Upload(string folderPath);
 
+    Task<bool> CheckFileExists(string fileName);
+
+    string GetPreSignedURLFromFolderPath(string folderPath);
+
     void Delete(string filePath);
 }
