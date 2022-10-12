@@ -165,4 +165,19 @@
   <data name="Shell_PreviewTitle.Text" xml:space="preserve">
     <value>プレビュー</value>
   </data>
+  <data name="ButtonCancel.Content" xml:space="preserve">
+    <value>キャンセル</value>
+  </data>
+  <data name="Shell_Cancel.Content" xml:space="preserve">
+    <value>キャンセル</value>
+  </data>
+  <data name="SimpleTextCancel" xml:space="preserve">
+    <value>キャンセル</value>
+  </data>
+  <data name="SimpleTextReprint" xml:space="preserve">
+    <value>再印刷</value>
+  </data>
+  <data name="SimpleTextUpload" xml:space="preserve">
+    <value>アップロード</value>
+  </data>
 </root>
