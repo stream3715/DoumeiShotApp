@@ -13,4 +13,8 @@ public class TakenPhoto
     {
         get; set;
     }
+    public bool IsUploaded
+    {
+        get; set;
+    }
 }
