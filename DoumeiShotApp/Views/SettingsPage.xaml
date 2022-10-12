@@ -45,7 +45,7 @@
                         <ColumnDefinition Width="auto" />
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock x:Uid="Settings_FolderPathSelected" Text="{x:Bind ViewModel.SelectedFolderPath, Mode=TwoWay}" VerticalAlignment="Center" />
+                    <TextBlock x:Uid="Settings_FolderPathSelected" Text="{x:Bind ViewModel.SelectedFolderPath, Mode=OneWay}" VerticalAlignment="Center" />
                     <Button Grid.Column="1"
                         x:Uid="Settings_FolderSelect"
                         Command="{x:Bind ViewModel.PickDirectoryCommand}"
