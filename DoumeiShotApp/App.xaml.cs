@@ -58,6 +58,7 @@ public partial class App : Application
             services.AddSingleton<ILocalSettingsService, LocalSettingsService>();
             services.AddSingleton<IThemeSelectorService, ThemeSelectorService>();
             services.AddSingleton<IWatchingFolderService, WatchingFolderService>();
+            services.AddSingleton<IFrameImageSelectorService, FrameImageSelectorService>();
             services.AddSingleton<ITakenPhotoService, TakenPhotoService>();
             services.AddTransient<INavigationViewService, NavigationViewService>();
 
@@ -69,6 +70,7 @@ public partial class App : Application
             services.AddSingleton<IFileService, FileService>();
             services.AddSingleton<IS3Service, S3Service>();
             services.AddSingleton<IImageEditService, ImageEditService>();
+            services.AddSingleton<IPosPrinterService, PosPrinterService>();
 
             // Views and ViewModels
             services.AddTransient<SettingsViewModel>();

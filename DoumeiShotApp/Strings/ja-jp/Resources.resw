@@ -180,4 +180,10 @@
   <data name="SimpleTextUpload" xml:space="preserve">
     <value>アップロード</value>
   </data>
+  <data name="Settings_FrameImageSettings.Text" xml:space="preserve">
+    <value>フレーム設定</value>
+  </data>
+  <data name="Settings_FrameImageSelect.Content" xml:space="preserve">
+    <value>選択</value>
+  </data>
 </root>

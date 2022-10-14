@@ -5,13 +5,14 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 using DoumeiShotApp.Contracts.Services;
+using DoumeiShotApp.Core.Contracts.Services;
+using DoumeiShotApp.Core.Services;
 using DoumeiShotApp.Helpers;
 
 using Microsoft.UI.Xaml;
-
 using Windows.ApplicationModel;
+using Windows.Devices.PointOfService;
 using Windows.Storage;
-using Windows.Storage.Pickers;
 using WinRT.Interop;
 
 namespace DoumeiShotApp.ViewModels;
@@ -20,9 +21,12 @@ public class SettingsViewModel : ObservableRecipient
 {
     private readonly IThemeSelectorService _themeSelectorService;
     private readonly IWatchingFolderService _watchingFolderService;
+    private readonly IFrameImageSelectorService _frameImageSelectorService;
+    private readonly IPosPrinterService _posPrinterService;
     private ElementTheme _elementTheme;
     private StorageFolder? _watchingFolder;
     private string _selectedFolderPath;
+    private string _selectedFrameImagePath;
     private string _versionDescription;
 
     public ElementTheme ElementTheme
@@ -43,10 +47,21 @@ public class SettingsViewModel : ObservableRecipient
         set => SetProperty(ref _selectedFolderPath, value);
     }
 
+    public string SelectedFrameImagePath
+    {
+        get => _selectedFrameImagePath;
+        set => SetProperty(ref _selectedFrameImagePath, value);
+    }
+
     public string VersionDescription
     {
         get => _versionDescription;
         set => SetProperty(ref _versionDescription, value);
+    }
+
+    public ICommand PickPosPrinterCommand
+    {
+        get;
     }
 
     public ICommand PickDirectoryCommand
@@ -59,14 +74,29 @@ public class SettingsViewModel : ObservableRecipient
         get;
     }
 
-    public SettingsViewModel(IThemeSelectorService themeSelectorService, IWatchingFolderService watchingFolderService)
+    public ICommand PickFrameCommand
     {
+        get;
+    }
+
+    public SettingsViewModel(IThemeSelectorService themeSelectorService, IWatchingFolderService watchingFolderService, IFrameImageSelectorService frameImageSelectorService, IPosPrinterService posPrinterService)
+    {
+        // Service init
         _themeSelectorService = themeSelectorService;
         _watchingFolderService = watchingFolderService;
+        _frameImageSelectorService = frameImageSelectorService;
+        _posPrinterService = posPrinterService;
+
+        // internal var init
+        _watchingFolder = null;
+
+        // UI init
         _elementTheme = _themeSelectorService.Theme;
         _versionDescription = GetVersionDescription();
+
+        // Button init
         _selectedFolderPath = (_watchingFolderService.WatchingFolder != null && _watchingFolderService.WatchingFolder.Path != null) ? _watchingFolderService.WatchingFolder.Path : "未設定";
-        _watchingFolder = null;
+        _selectedFrameImagePath = _frameImageSelectorService.ImagePath != string.Empty ? _frameImageSelectorService.ImagePath : "未設定";
 
         SwitchThemeCommand = new RelayCommand<ElementTheme>(
             async (param) =>
@@ -78,20 +108,30 @@ public class SettingsViewModel : ObservableRecipient
                 }
             });
 
+        PickPosPrinterCommand = new RelayCommand<PosPrinter>(
+            (param) =>
+            {
+                _posPrinterService.ConnectPrinter();
+            });
+
         PickDirectoryCommand = new RelayCommand<StorageFolder>(
             async (param) =>
             {
-                var folderPicker = new FolderPicker();
-                folderPicker.FileTypeFilter.Add("*");
-
-                InitializeWithWindow.Initialize(folderPicker, WindowNative.GetWindowHandle(MainWindow.Handle));
-
-                var folder = await folderPicker.PickSingleFolderAsync();
-                if (folder != null)
+                if (await MainWindow.ShowFolderPickerAsync(WindowNative.GetWindowHandle(MainWindow.Handle)) is var folder && folder != null)
                 {
                     WatchingFolder = folder;
                     await _watchingFolderService.SetFolderAsync(WatchingFolder);
                     SelectedFolderPath = WatchingFolder.Path;
+                }
+            });
+
+        PickFrameCommand = new RelayCommand<string>(
+            async (param) =>
+            {
+                if (await MainWindow.ShowFilePickerAsync(WindowNative.GetWindowHandle(MainWindow.Handle), new string[] { ".png" }) is var file && file != null)
+                {
+                    SelectedFrameImagePath = file.Path;
+                    await _frameImageSelectorService.SetPathAsync(SelectedFrameImagePath);
                 }
             });
     }

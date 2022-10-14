@@ -25,19 +25,16 @@
                     <TextBlock x:Uid="Settings_PrinterNameSelected" VerticalAlignment="Center" />
                     <Button Grid.Column="1"
                         x:Uid="Settings_PrinterConnect"
-                        Command="{x:Bind ViewModel.SwitchThemeCommand}"
+                        Command="{x:Bind ViewModel.PickPosPrinterCommand}"
                         VerticalAlignment="Center"
                         Margin="{StaticResource XSmallLeftMargin}"
                         FontSize="15">
-                        <Button.CommandParameter>
-                            <xaml:ElementTheme>Light</xaml:ElementTheme>
-                        </Button.CommandParameter>
                     </Button>
 
                 </Grid>
             </StackPanel>
 
-            <TextBlock x:Uid="Settings_FolderSettings" Style="{ThemeResource SubtitleTextBlockStyle}" />
+            <TextBlock x:Uid="Settings_FolderSettings" Style="{ThemeResource SubtitleTextBlockStyle}" Margin="{StaticResource SmallTopMargin}" />
             <StackPanel Margin="{StaticResource XSmallTopMargin}">
                 <Grid VerticalAlignment="Center">
                     <Grid.ColumnDefinitions>
@@ -57,6 +54,27 @@
                 </Grid>
             </StackPanel>
 
+
+            <TextBlock x:Uid="Settings_FrameImageSettings" Style="{ThemeResource SubtitleTextBlockStyle}" Margin="{StaticResource SmallTopMargin}" />
+            <StackPanel Margin="{StaticResource XSmallTopMargin}">
+                <Grid VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock x:Uid="Settings_FrameImagePath" Text="{x:Bind ViewModel.SelectedFrameImagePath, Mode=OneWay}" VerticalAlignment="Center" />
+                    
+                    <Button Grid.Column="1"
+                        x:Uid="Settings_FrameImageSelect"
+                        Command="{x:Bind ViewModel.PickFrameCommand}"
+                        FontSize="15"
+                        Margin="{StaticResource XSmallLeftMargin}" 
+                        VerticalAlignment="Center" >
+                    </Button>
+                </Grid>
+            </StackPanel>
+            
             <TextBlock x:Uid="Settings_About" Style="{ThemeResource SubtitleTextBlockStyle}" />
 
             <StackPanel Margin="{StaticResource XSmallTopMargin}">

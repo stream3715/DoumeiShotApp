@@ -4,11 +4,11 @@ public interface IS3Service
 {
     void ListBucket();
 
-    string Upload(string folderPath);
+    (string, DateTime) Upload(string folderPath);
 
     Task<bool> CheckFileExists(string fileName);
 
-    string GetPreSignedURLFromFolderPath(string folderPath);
+    (string, DateTime) GetPreSignedURLFromFolderPath(string folderPath);
 
     void Delete(string filePath);
 }

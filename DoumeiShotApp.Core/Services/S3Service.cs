@@ -72,7 +72,7 @@ public class S3Service : IS3Service
         return null;
     }
 
-    public string Upload(string folderPath)
+    public (string, DateTime) Upload(string folderPath)
     {
         TransferUtility fileTransferUtility = new(_mClient);
         fileTransferUtility.UploadAsync(folderPath, BUCKET_NAME).Wait();
@@ -107,9 +107,10 @@ public class S3Service : IS3Service
         return null;
     }
 
-    public string GetPreSignedURLFromFolderPath(string folderPath)
+    public (string, DateTime) GetPreSignedURLFromFolderPath(string folderPath)
     {
-        return GetPreSignedURL(Path.GetFileName(folderPath), DateTime.Now.AddHours(24));
+        var expires = DateTime.Now.AddHours(24);
+        return (GetPreSignedURL(Path.GetFileName(folderPath), expires), expires);
     }
 
     private string GetPreSignedURL(string fileName, DateTime expiresDateTime)

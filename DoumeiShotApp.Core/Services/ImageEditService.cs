@@ -33,7 +33,7 @@ public class ImageEditService : IImageEditService
         var outImageData = surface.Snapshot().Encode(SKEncodedImageFormat.Jpeg, 100);
         outImageData.SaveTo(stream);
 
-        return outPath + "\\F_" + baseName;
+        return outPath + "\\MOASHOT_" + baseName;
     }
 
     private static float CalcScale(int width, int height, int targetWidth, int targetHeight)
