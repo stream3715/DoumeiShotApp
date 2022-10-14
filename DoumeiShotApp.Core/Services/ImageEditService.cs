@@ -7,10 +7,6 @@ public class ImageEditService : IImageEditService
 {
     public string OverlayImage(string baseImagePath, string coverImagePath)
     {
-        var outPath = Path.GetDirectoryName(baseImagePath);
-        var baseName = Path.GetFileName(baseImagePath);
-
-        using var stream = File.Create(outPath + "\\F_" + baseName);
         using var baseImage = SKBitmap.Decode(baseImagePath);
         using var coverImage = SKBitmap.Decode(coverImagePath);
         using var newImage = new SKBitmap(coverImage.Width, coverImage.Height);
@@ -31,9 +27,10 @@ public class ImageEditService : IImageEditService
         canvas.Flush();
 
         var outImageData = surface.Snapshot().Encode(SKEncodedImageFormat.Jpeg, 100);
+        using var stream = File.Create(baseImagePath);
         outImageData.SaveTo(stream);
 
-        return outPath + "\\MOASHOT_" + baseName;
+        return baseImagePath;
     }
 
     private static float CalcScale(int width, int height, int targetWidth, int targetHeight)

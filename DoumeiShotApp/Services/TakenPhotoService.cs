@@ -37,6 +37,10 @@ public class TakenPhotoService : ITakenPhotoService
             if (file.FileType.ToLower() != ".jpg")
             {
                 continue;
+            } else if(file.Name.Length == 40)
+            {
+                File.Delete(file.Path);
+                continue;
             }
 
             var thumbImage = await file.GetThumbnailAsync(ThumbnailMode.SingleItem, 100);

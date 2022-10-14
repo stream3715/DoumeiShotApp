@@ -31,6 +31,7 @@ public class PosPrinterService : IPosPrinterService
 
     public void PrintQRCode(string url, DateTime expired)
     {
+        if (_printer == null) ConnectPrinter();
         var e = new EPSON();
 
         _printer.WriteAsync( // or, if using and immediate printer, use await printer.WriteAsync

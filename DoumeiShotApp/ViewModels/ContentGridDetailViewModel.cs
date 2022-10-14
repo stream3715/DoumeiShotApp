@@ -34,6 +34,7 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
 
     private BitmapImage _framedImage;
     private string _framedImagePath;
+    private string _originalFrameImagePath;
 
     private string _uploadButtonText;
     private ICommand? _uploadButtonCommand;
@@ -86,12 +87,18 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
 
         _framedImage = new BitmapImage();
         _framedImagePath = string.Empty;
+        _originalFrameImagePath = string.Empty;
         _uploadButtonText = string.Empty;
         XamlRoot = null;
 
         UploadCommand = null;
         CancelCommand = new RelayCommand(ButtonCancel);
         ButtonUploadContent = string.Empty;
+    }
+
+    ~ContentGridDetailViewModel()
+    {
+        OnNavigatedFrom();
     }
 
     public BitmapImage FramedImage
@@ -106,7 +113,23 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
         {
             // Get image data
             var data = await _takenPhotoService.GetContentGridDataAsync();
-            Item = data.First(i => i.File!.Path == filePath);
+            try
+            {
+                Item = data.First(i => i.File!.Path == filePath);
+            } catch (Exception)
+            {
+                var contentDialog = new ContentDialog
+                {
+                    Title = "エラー",
+                    Content = "画像が見つかりません。",
+                    CloseButtonText = "OK",
+                    XamlRoot = XamlRoot!
+                };
+
+                await contentDialog.ShowAsync();
+                ButtonCancel();
+                return;
+            }
 
             // Overlay frame image
             var framePath = _framedImageSelectorService.ImagePath;
@@ -125,25 +148,30 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
             }
             else
             {
-                var framedOriginal = OverlayImage(filePath, framePath);
-                var tmpFile = Path.GetDirectoryName(filePath) + @"\" + Guid.NewGuid().ToString() + ".jpg";
-                File.Copy(framedOriginal, tmpFile);
-                _framedImagePath = tmpFile;
-                FramedImage.UriSource = new Uri(_framedImagePath);
-
                 // Check if image is already uploaded
-                var framedFileName = Path.GetFileName(framedOriginal);
+                var framedFileName = Path.GetFileName(filePath);
                 if (await _s3Service.CheckFileExists(framedFileName))
                 {
                     Item.IsUploaded = true;
                     ButtonUploadContent = _resourceLoader.GetString("SimpleTextReprint");
                     UploadCommand = new RelayCommand(ReprintFramedUri);
+
+                    FramedImage.UriSource = new Uri(filePath);
+                    _originalFrameImagePath = filePath;
                 }
                 else
                 {
                     Item.IsUploaded = false;
                     ButtonUploadContent = _resourceLoader.GetString("SimpleTextUpload");
                     UploadCommand = new RelayCommand(UploadFramedImage);
+
+                    var framedOriginal = OverlayImage(filePath, framePath);
+                    var tmpFile = Path.GetDirectoryName(filePath) + @"\" + Guid.NewGuid().ToString() + ".jpg";
+                    File.Copy(framedOriginal, tmpFile);
+                    _framedImagePath = tmpFile;
+                    FramedImage.UriSource = new Uri(_framedImagePath);
+
+                    _originalFrameImagePath = framedOriginal;
                 }
             }
         }
@@ -155,12 +183,6 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
         {
             File.Delete(_framedImagePath);
         }
-
-        var originalPath = Item!.File!.Path;
-        if (File.Exists(originalPath))
-        {
-            File.Delete(originalPath);
-        }
     }
 
     private string OverlayImage(string baseImagePath, string coverImagePath)
@@ -170,7 +192,7 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
 
     private async void UploadFramedImage()
     {
-        var (url, expires) = _s3Service.Upload(_framedImagePath);
+        var (url, expires) = _s3Service.Upload(_originalFrameImagePath);
 
         var contentDialog = new ContentDialog
         {
@@ -198,7 +220,7 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
 
     private async void ReprintFramedUri()
     {
-        var (url, expires) = _s3Service.GetPreSignedURLFromFolderPath(_framedImagePath);
+        var (url, expires) = _s3Service.GetPreSignedURLFromFolderPath(_originalFrameImagePath);
 
         var contentDialog = new ContentDialog
         {
