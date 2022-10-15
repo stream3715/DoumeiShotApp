@@ -171,13 +171,11 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
                     ButtonUploadContent = _resourceLoader.GetString("SimpleTextUpload");
                     UploadCommand = new RelayCommand(UploadFramedImage);
 
-                    var framedOriginal = OverlayImage(filePath, framePath);
-                    var tmpFile = Path.GetDirectoryName(filePath) + @"\" + Guid.NewGuid().ToString() + ".jpg";
-                    File.Copy(framedOriginal, tmpFile);
+                    var tmpFile = OverlayImage(filePath, framePath);
                     _framedImagePath = tmpFile;
                     FramedImage.UriSource = new Uri(_framedImagePath);
 
-                    _originalFrameImagePath = framedOriginal;
+                    _originalFrameImagePath = tmpFile;
                 }
             }
         }
@@ -198,7 +196,21 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
 
     private async void UploadFramedImage()
     {
-        var (url, expires) = _s3Service.Upload(_originalFrameImagePath);
+        File.Copy(Item!.File!.Path, Item!.File!.Path + "_orig", true);
+        File.Copy(_originalFrameImagePath, Item!.File!.Path, true);
+
+        var (url, expires) = _s3Service.Upload(Item!.File!.Path);
+        if(url != null)
+        {
+            Item!.IsUploaded = true;
+        } else
+        {
+            File.Move(Item!.File!.Path + "_orig", Item!.File!.Path, true);
+            throw new Exception("UPLOAD_FAILED");
+        }
+        
+        File.Delete(Item!.File!.Path + "_orig");
+        File.Delete(_originalFrameImagePath);
 
         var contentDialog = new ContentDialog
         {
@@ -220,27 +232,17 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
                 _posPrinterService.ConnectPrinter(method, target);
                 _posPrinterService.PrintQRCode(url, expires);
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                var errorDialog = new ContentDialog
-                {
-                    Title = "エラー",
-                    Content = e.Message,
-                    CloseButtonText = "OK",
-                    XamlRoot = XamlRoot!
-                };
 
-                await errorDialog.ShowAsync();
             }
         }
         else if (result == ContentDialogResult.Secondary)
         {
             OpenUrl(url);
         }
-        else
-        {
-            ButtonCancel();
-        }
+        ButtonCancel();
+        return;
     }
 
     private async void ReprintFramedUri()
@@ -267,27 +269,17 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
                 _posPrinterService.ConnectPrinter(method, target);
                 _posPrinterService.PrintQRCode(url, expires);
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                var errorDialog = new ContentDialog
-                {
-                    Title = "エラー",
-                    Content = e.Message,
-                    CloseButtonText = "OK",
-                    XamlRoot = XamlRoot!
-                };
 
-                await errorDialog.ShowAsync();
             }
         }
         else if (result == ContentDialogResult.Secondary)
         {
             OpenUrl(url);
         }
-        else
-        {
-            ButtonCancel();
-        }
+        ButtonCancel();
+        return;
     }
 
     private static Process? OpenUrl(string url)

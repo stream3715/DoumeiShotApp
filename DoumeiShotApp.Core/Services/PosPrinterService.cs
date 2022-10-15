@@ -2,6 +2,7 @@
 using DoumeiShotApp.Core.Contracts.Services;
 using ESCPOS_NET;
 using ESCPOS_NET.Emitters;
+using ESCPOS_NET.Emitters.BaseCommandValues;
 using ESCPOS_NET.Utilities;
 
 namespace DoumeiShotApp.Core.Services;
@@ -10,9 +11,12 @@ public class PosPrinterService : IPosPrinterService
 {
     private ImmediateNetworkPrinter _networkPrinter;
     private SerialPrinter _serialPrinter;
+    private readonly EPSON e;
+
     public PosPrinterService()
     {
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        e = new EPSON();
     }
 
     private static bool ValidateIPv4(string ipString)
@@ -33,7 +37,7 @@ public class PosPrinterService : IPosPrinterService
         return splitValues.All(r => byte.TryParse(r, out tempForParsing));
     }
 
-    public void ConnectPrinter(int method, string target)
+    public async Task ConnectPrinter(int method, string target)
     {
         _networkPrinter = null;
         if (_serialPrinter != null) { _serialPrinter.Dispose(); }
@@ -58,21 +62,24 @@ public class PosPrinterService : IPosPrinterService
                 ConnectionString = $"{target}:9100",
                 PrinterName = "PosPrinter"
             });
+
+            try
+            {
+                await _networkPrinter.GetOnlineStatus(e);
+            } catch
+            {
+                throw new Exception("PRINTER_NOT_RESPONSED");
+            }
+            
         }
         else
         {
             throw new Exception("UNKNOWN_METHOD");
         }
-
-        if ((method == 0 && _serialPrinter == null) || (method == 1 && _networkPrinter == null))
-        {
-            throw new Exception("PRINTER_NOT_RESPONSED");
-        }
     }
 
     public void PrintQRCode(string url, DateTime expired)
     {
-        var e = new EPSON();
         var printBody = ByteSplicer.Combine(
               // SJIS対応部分
               new byte[3] {

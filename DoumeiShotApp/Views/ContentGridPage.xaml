@@ -32,8 +32,8 @@
                         </Grid.Resources>
                         
                         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Image x:Name="itemImage"
-                                Source="{x:Bind Thumbnail}" />
+                            <Image x:Name="itemImage" MaxHeight="150" MaxWidth="150"
+                                Source="{x:Bind Thumbnail}" Stretch="Uniform"/>
                             <TextBlock
                                 Margin="{StaticResource XXSmallTopMargin}"
                                 HorizontalAlignment="Center"

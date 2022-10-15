@@ -159,7 +159,7 @@ public class SettingsViewModel : ObservableRecipient
                     {
                         throw new Exception("METHOD_UNKNOWN");
                     }
-                    _posPrinterService.ConnectPrinter(ConnectionMethodID, target);
+                    await _posPrinterService.ConnectPrinter(ConnectionMethodID, target);
                     await _printerSelectorService.SetPrinterAsync(ConnectionMethodID, target);
                 }
                 catch (Exception)

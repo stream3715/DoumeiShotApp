@@ -71,7 +71,7 @@
                     <ColumnDefinition Width="auto" />
                 </Grid.ColumnDefinitions>
 
-                <TextBlock x:Uid="Settings_PrinterStatus" VerticalAlignment="Center" />
+                <!-- <TextBlock x:Uid="Settings_PrinterStatus" VerticalAlignment="Center" /> -->
                 <Button Grid.Column="1"
                         x:Uid="Settings_PrinterConnect"
                         Command="{x:Bind ViewModel.PickSavePosPrinterCommand}"

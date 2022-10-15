@@ -27,10 +27,11 @@ public class ImageEditService : IImageEditService
         canvas.Flush();
 
         var outImageData = surface.Snapshot().Encode(SKEncodedImageFormat.Jpeg, 100);
-        using var stream = File.Create(baseImagePath);
+        var outImageTmpPath = Path.GetDirectoryName(baseImagePath) + @"\" + Guid.NewGuid().ToString() + ".jpg";
+        using var stream = File.Create(outImageTmpPath);
         outImageData.SaveTo(stream);
 
-        return baseImagePath;
+        return outImageTmpPath;
     }
 
     private static float CalcScale(int width, int height, int targetWidth, int targetHeight)
