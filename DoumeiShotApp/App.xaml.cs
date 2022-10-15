@@ -57,6 +57,7 @@ public partial class App : Application
             // Services
             services.AddSingleton<ILocalSettingsService, LocalSettingsService>();
             services.AddSingleton<IThemeSelectorService, ThemeSelectorService>();
+            services.AddSingleton<IPrinterSelectorService, PrinterSelectorService>();
             services.AddSingleton<IWatchingFolderService, WatchingFolderService>();
             services.AddSingleton<IFrameImageSelectorService, FrameImageSelectorService>();
             services.AddSingleton<ITakenPhotoService, TakenPhotoService>();

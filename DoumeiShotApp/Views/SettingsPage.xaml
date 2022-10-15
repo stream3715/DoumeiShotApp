@@ -6,6 +6,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:helpers="using:DoumeiShotApp.Helpers"
     xmlns:xaml="using:Microsoft.UI.Xaml"
+    Loaded="SettingsPage_OnLoaded"
     mc:Ignorable="d">
     <Page.Resources>
         <helpers:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
@@ -13,26 +14,6 @@
     <Grid>
         <StackPanel
             x:Name="ContentArea">
-            <TextBlock x:Uid="Settings_PrinterSettings" Style="{ThemeResource SubtitleTextBlockStyle}" />
-
-            <StackPanel Margin="{StaticResource XSmallTopMargin}">
-                <Grid VerticalAlignment="Center">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="auto" />
-                        <ColumnDefinition Width="auto" />
-                    </Grid.ColumnDefinitions>
-
-                    <TextBlock x:Uid="Settings_PrinterNameSelected" VerticalAlignment="Center" />
-                    <Button Grid.Column="1"
-                        x:Uid="Settings_PrinterConnect"
-                        Command="{x:Bind ViewModel.PickPosPrinterCommand}"
-                        VerticalAlignment="Center"
-                        Margin="{StaticResource XSmallLeftMargin}"
-                        FontSize="15">
-                    </Button>
-
-                </Grid>
-            </StackPanel>
 
             <TextBlock x:Uid="Settings_FolderSettings" Style="{ThemeResource SubtitleTextBlockStyle}" Margin="{StaticResource SmallTopMargin}" />
             <StackPanel Margin="{StaticResource XSmallTopMargin}">
@@ -74,8 +55,33 @@
                     </Button>
                 </Grid>
             </StackPanel>
-            
-            <TextBlock x:Uid="Settings_About" Style="{ThemeResource SubtitleTextBlockStyle}" />
+
+            <TextBlock x:Uid="Settings_PrinterSettings" Style="{ThemeResource SubtitleTextBlockStyle}" Margin="{StaticResource SmallTopMargin}" />
+
+            <StackPanel Margin="{StaticResource XSmallTopMargin}">
+                <RadioButtons x:Uid="Settings_PrinterConnectMethodRadio" Margin="{StaticResource SmallTopBottomMargin}" SelectedIndex="{x:Bind ViewModel.ConnectionMethodID}">
+                    <RadioButton Content="USB" Checked="{x:Bind ViewModel.PickUSBHandler}"/>
+                    <RadioButton Content="Ethernet" Checked="{x:Bind ViewModel.PickEthernetHandler}"/>
+                </RadioButtons>
+            </StackPanel>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto" />
+                    <ColumnDefinition Width="auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock x:Uid="Settings_PrinterStatus" VerticalAlignment="Center" />
+                <Button Grid.Column="1"
+                        x:Uid="Settings_PrinterConnect"
+                        Command="{x:Bind ViewModel.PickSavePosPrinterCommand}"
+                        VerticalAlignment="Center"
+                        Margin="{StaticResource XSmallLeftMargin}"
+                        FontSize="15">
+                </Button>
+            </Grid>
+
+            <TextBlock x:Uid="Settings_About" Style="{ThemeResource SubtitleTextBlockStyle}" Margin="{StaticResource SmallTopMargin}" />
 
             <StackPanel Margin="{StaticResource XSmallTopMargin}">
                 <TextBlock Text="{x:Bind ViewModel.VersionDescription, Mode=OneWay}" Style="{ThemeResource BodyTextBlockStyle}" />

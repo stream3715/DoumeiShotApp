@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace DoumeiShotApp.Core.Contracts.Services;
+﻿namespace DoumeiShotApp.Core.Contracts.Services;
 public interface IPosPrinterService
 {
-    void ConnectPrinter();
+    void ConnectPrinter(int method, string target);
     void PrintQRCode(string url, DateTime expired);
 }

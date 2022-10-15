@@ -1,5 +1,5 @@
 ﻿using DoumeiShotApp.ViewModels;
-
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
 namespace DoumeiShotApp.Views;
@@ -16,5 +16,10 @@ public sealed partial class SettingsPage : Page
     {
         ViewModel = App.GetService<SettingsViewModel>();
         InitializeComponent();
+    }
+
+    private void SettingsPage_OnLoaded(object sender, RoutedEventArgs e)
+    {
+        ViewModel.XamlRoot = Content.XamlRoot;
     }
 }

@@ -17,6 +17,7 @@ using Microsoft.UI.Xaml;
 using System.Reflection;
 using Microsoft.Windows.ApplicationModel.Resources;
 using DoumeiShotApp.Core.Services;
+using static CommunityToolkit.WinUI.UI.Animations.Expressions.ExpressionValues;
 
 namespace DoumeiShotApp.ViewModels;
 
@@ -27,6 +28,7 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
     private readonly IFrameImageSelectorService _framedImageSelectorService;
     private readonly IImageEditService _imageEditService;
     private readonly IS3Service _s3Service;
+    private readonly IPrinterSelectorService _printerSelectorService;
     private readonly IPosPrinterService _posPrinterService;
     private readonly ResourceLoader _resourceLoader;
 
@@ -74,6 +76,7 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
         IFrameImageSelectorService frameImageSelectorService,
         INavigationService navigationService,
         IS3Service s3Service,
+        IPrinterSelectorService printerSelectorService,
         IPosPrinterService posPrinterService)
     {
         _resourceLoader = new ResourceLoader();
@@ -83,6 +86,7 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
         _framedImageSelectorService = frameImageSelectorService;
         _navigationService = navigationService;
         _s3Service = s3Service;
+        _printerSelectorService = printerSelectorService;
         _posPrinterService = posPrinterService;
 
         _framedImage = new BitmapImage();
@@ -109,6 +113,7 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
 
     public async void OnNavigatedTo(object parameter)
     {
+        await _printerSelectorService.InitializeAsync();
         if (parameter is string filePath)
         {
             // Get image data
@@ -116,7 +121,8 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
             try
             {
                 Item = data.First(i => i.File!.Path == filePath);
-            } catch (Exception)
+            }
+            catch (Exception)
             {
                 var contentDialog = new ContentDialog
                 {
@@ -206,7 +212,26 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
         var result = await contentDialog.ShowAsync();
         if (result == ContentDialogResult.Primary)
         {
-            _posPrinterService.PrintQRCode(url, expires);
+            var method = _printerSelectorService.Method;
+            var target = _printerSelectorService.Target;
+
+            try
+            {
+                _posPrinterService.ConnectPrinter(method, target);
+                _posPrinterService.PrintQRCode(url, expires);
+            }
+            catch (Exception e)
+            {
+                var errorDialog = new ContentDialog
+                {
+                    Title = "エラー",
+                    Content = e.Message,
+                    CloseButtonText = "OK",
+                    XamlRoot = XamlRoot!
+                };
+
+                await errorDialog.ShowAsync();
+            }
         }
         else if (result == ContentDialogResult.Secondary)
         {
@@ -234,7 +259,26 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
         var result = await contentDialog.ShowAsync();
         if (result == ContentDialogResult.Primary)
         {
-            _posPrinterService.PrintQRCode(url, expires);
+            var method = _printerSelectorService.Method;
+            var target = _printerSelectorService.Target;
+
+            try
+            {
+                _posPrinterService.ConnectPrinter(method, target);
+                _posPrinterService.PrintQRCode(url, expires);
+            }
+            catch (Exception e)
+            {
+                var errorDialog = new ContentDialog
+                {
+                    Title = "エラー",
+                    Content = e.Message,
+                    CloseButtonText = "OK",
+                    XamlRoot = XamlRoot!
+                };
+
+                await errorDialog.ShowAsync();
+            }
         }
         else if (result == ContentDialogResult.Secondary)
         {

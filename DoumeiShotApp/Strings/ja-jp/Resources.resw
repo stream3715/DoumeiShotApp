@@ -156,7 +156,7 @@
   <data name="Settings_PrinterConnect.Content" xml:space="preserve">
     <value>接続</value>
   </data>
-  <data name="Settings_PrinterNameSelected.Text" xml:space="preserve">
+  <data name="Settings_PrinterStatus.Text" xml:space="preserve">
     <value>未接続</value>
   </data>
   <data name="Settings_PrinterSettings.Text" xml:space="preserve">
@@ -185,5 +185,8 @@
   </data>
   <data name="Settings_FrameImageSelect.Content" xml:space="preserve">
     <value>選択</value>
+  </data>
+  <data name="Settings_PrinterConnectMethodRadio.Header" xml:space="preserve">
+    <value>接続方法</value>
   </data>
 </root>

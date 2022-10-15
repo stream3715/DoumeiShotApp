@@ -10,6 +10,7 @@ using DoumeiShotApp.Core.Services;
 using DoumeiShotApp.Helpers;
 
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Windows.ApplicationModel;
 using Windows.Devices.PointOfService;
 using Windows.Storage;
@@ -23,16 +24,20 @@ public class SettingsViewModel : ObservableRecipient
     private readonly IWatchingFolderService _watchingFolderService;
     private readonly IFrameImageSelectorService _frameImageSelectorService;
     private readonly IPosPrinterService _posPrinterService;
-    private ElementTheme _elementTheme;
+    private readonly IPrinterSelectorService _printerSelectorService;
     private StorageFolder? _watchingFolder;
     private string _selectedFolderPath;
     private string _selectedFrameImagePath;
     private string _versionDescription;
+    private int _connectionMethodId;
+    private string? _connectionTarget;
+    private Visibility _printerSettingsUSBVisibility;
+    private Visibility _printerSettingsEthernetVisibility;
 
-    public ElementTheme ElementTheme
+    public XamlRoot? XamlRoot
     {
-        get => _elementTheme;
-        set => SetProperty(ref _elementTheme, value);
+        get;
+        set;
     }
 
     public StorageFolder? WatchingFolder
@@ -59,7 +64,18 @@ public class SettingsViewModel : ObservableRecipient
         set => SetProperty(ref _versionDescription, value);
     }
 
-    public ICommand PickPosPrinterCommand
+    public int ConnectionMethodID
+    {
+        get => _connectionMethodId;
+        set => SetProperty(ref _connectionMethodId, value);
+    }
+    public string? ConnectionTarget
+    {
+        get => _connectionTarget;
+        set => SetProperty(ref _connectionTarget, value);
+    }
+
+    public ICommand PickSavePosPrinterCommand
     {
         get;
     }
@@ -69,7 +85,12 @@ public class SettingsViewModel : ObservableRecipient
         get;
     }
 
-    public ICommand SwitchThemeCommand
+    public RoutedEventHandler PickUSBHandler
+    {
+        get;
+    }
+
+    public RoutedEventHandler PickEthernetHandler
     {
         get;
     }
@@ -79,39 +100,80 @@ public class SettingsViewModel : ObservableRecipient
         get;
     }
 
-    public SettingsViewModel(IThemeSelectorService themeSelectorService, IWatchingFolderService watchingFolderService, IFrameImageSelectorService frameImageSelectorService, IPosPrinterService posPrinterService)
+    public Visibility PrinterSettingsUSBVisibility
+    {
+        get => _printerSettingsUSBVisibility;
+        set => SetProperty(ref _printerSettingsUSBVisibility, value);
+    }
+
+    public Visibility PrinterSettingsEthernetVisibility
+    {
+        get => _printerSettingsEthernetVisibility;
+        set => SetProperty(ref _printerSettingsEthernetVisibility, value);
+    }
+
+    public SettingsViewModel(
+        IThemeSelectorService themeSelectorService,
+        IWatchingFolderService watchingFolderService,
+        IFrameImageSelectorService frameImageSelectorService,
+        IPosPrinterService posPrinterService,
+        IPrinterSelectorService printerSelectorService)
     {
         // Service init
         _themeSelectorService = themeSelectorService;
         _watchingFolderService = watchingFolderService;
         _frameImageSelectorService = frameImageSelectorService;
+        _printerSelectorService = printerSelectorService;
         _posPrinterService = posPrinterService;
 
         // internal var init
         _watchingFolder = null;
 
         // UI init
-        _elementTheme = _themeSelectorService.Theme;
         _versionDescription = GetVersionDescription();
 
         // Button init
         _selectedFolderPath = (_watchingFolderService.WatchingFolder != null && _watchingFolderService.WatchingFolder.Path != null) ? _watchingFolderService.WatchingFolder.Path : "未設定";
         _selectedFrameImagePath = _frameImageSelectorService.ImagePath != string.Empty ? _frameImageSelectorService.ImagePath : "未設定";
+        
+        ConnectionMethodID = _printerSelectorService.Method;
+        ConnectionTarget = _printerSelectorService.Target;
+        
+        _selectedFrameImagePath = _frameImageSelectorService.ImagePath != string.Empty ? _frameImageSelectorService.ImagePath : "未設定";
 
-        SwitchThemeCommand = new RelayCommand<ElementTheme>(
+        PickSavePosPrinterCommand = new RelayCommand<PosPrinter>(
             async (param) =>
             {
-                if (ElementTheme != param)
+                try
                 {
-                    ElementTheme = param;
-                    await _themeSelectorService.SetThemeAsync(param);
+                    string target;
+                    if (ConnectionMethodID == 0)
+                    {
+                        target = "COM2";
+                    }
+                    else if (ConnectionMethodID == 1)
+                    {
+                        target = "192.168.1.240";
+                    }
+                    else
+                    {
+                        throw new Exception("METHOD_UNKNOWN");
+                    }
+                    _posPrinterService.ConnectPrinter(ConnectionMethodID, target);
+                    await _printerSelectorService.SetPrinterAsync(ConnectionMethodID, target);
                 }
-            });
+                catch (Exception)
+                {
+                    var contentDialog = new ContentDialog
+                    {
+                        Title = "エラー",
+                        Content = "プリンターに接続できません。",
+                        CloseButtonText = "OK",
+                        XamlRoot = XamlRoot!
+                    };
 
-        PickPosPrinterCommand = new RelayCommand<PosPrinter>(
-            (param) =>
-            {
-                _posPrinterService.ConnectPrinter();
+                    var result = await contentDialog.ShowAsync();
+                }
             });
 
         PickDirectoryCommand = new RelayCommand<StorageFolder>(
@@ -133,6 +195,22 @@ public class SettingsViewModel : ObservableRecipient
                     SelectedFrameImagePath = file.Path;
                     await _frameImageSelectorService.SetPathAsync(SelectedFrameImagePath);
                 }
+            });
+
+        PickUSBHandler = new RoutedEventHandler(
+            (sender, e) =>
+            {
+                ConnectionMethodID = 0;
+                PrinterSettingsUSBVisibility = Visibility.Visible;
+                PrinterSettingsEthernetVisibility = Visibility.Collapsed;
+            });
+
+        PickEthernetHandler = new RoutedEventHandler(
+            (sender, e) =>
+            {
+                ConnectionMethodID = 1;
+                PrinterSettingsUSBVisibility = Visibility.Collapsed;
+                PrinterSettingsEthernetVisibility = Visibility.Visible;
             });
     }
 

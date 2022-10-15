@@ -8,8 +8,10 @@ using DoumeiShotApp.Contracts.Services;
 using DoumeiShotApp.Contracts.ViewModels;
 using DoumeiShotApp.Models;
 using DoumeiShotApp.Services;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media.Imaging;
+using Windows.Storage;
 using Windows.Storage.FileProperties;
 
 namespace DoumeiShotApp.ViewModels;
@@ -20,28 +22,45 @@ public class ContentGridViewModel : ObservableRecipient, INavigationAware
     private readonly IFrameImageSelectorService _frameImageSelectorService;
     private readonly INavigationService _navigationService;
     private readonly ITakenPhotoService _takenPhotoService;
+    private readonly IPrinterSelectorService _printerSelectorService;
+
+    private Windows.Storage.Search.StorageFileQueryResult? _queryResult;
 
     public ICommand ItemClickCommand
     {
         get;
     }
 
+    private DispatcherQueue DispatcherQueue
+    {
+        get;
+    }
+
     public ObservableCollection<TakenPhoto> Source { get; } = new ObservableCollection<TakenPhoto>();
 
-    public ContentGridViewModel(INavigationService navigationService, ITakenPhotoService takenPhotoService, IWatchingFolderService watchingFolderService, IFrameImageSelectorService frameImageSelectorService)
+    public ContentGridViewModel(
+        INavigationService navigationService, 
+        ITakenPhotoService takenPhotoService, 
+        IWatchingFolderService watchingFolderService, 
+        IFrameImageSelectorService frameImageSelectorService,
+        IPrinterSelectorService printerSelectorService)
     {
         _navigationService = navigationService;
         _takenPhotoService = takenPhotoService;
         _watchingFolderService = watchingFolderService;
         _frameImageSelectorService = frameImageSelectorService;
+        _printerSelectorService = printerSelectorService;
 
         ItemClickCommand = new RelayCommand<TakenPhoto>(OnItemClick);
+        DispatcherQueue = DispatcherQueue.GetForCurrentThread();
     }
 
     public async void OnNavigatedTo(object parameter)
     {
+        await _printerSelectorService.InitializeAsync();
         await _watchingFolderService.InitializeAsync();
         await _frameImageSelectorService.InitializeAsync();
+        await FileQueryInit();
         await UpdateGridList();
     }
 
@@ -68,5 +87,52 @@ public class ContentGridViewModel : ObservableRecipient, INavigationAware
             _navigationService.SetListDataItemForNextConnectedAnimation(clickedItem);
             _navigationService.NavigateTo(typeof(ContentGridDetailViewModel).FullName!, clickedItem.File.Path);
         }
+    }
+
+    private async Task FileQueryInit()
+    {
+        if(_watchingFolderService.WatchingFolder == null)
+        {
+            return;
+        }
+
+        // 監視を行うファイルの拡張子をリストに追加する
+        // 全てのファイルを監視する場合はQueryOptionsで以下のList<string>を指定する
+        // ・"*"の単一のエントリを含む配列
+        // ・空の配列
+        // ・null
+        // 複数の拡張子を監視する場合は.Addで監視対象の拡張子をリストに追加する
+        var fileTypeFilter = new List<string>
+        {
+            ".jpg",
+            ".JPG"
+        };
+
+        // ファイルリストのソート順とフィルターを指定する
+        // OrderByNameではファイルは名前順にソートされる
+        var queryOptions =
+            new Windows.Storage.Search.QueryOptions
+                (Windows.Storage.Search.CommonFileQuery.OrderByName, fileTypeFilter);
+
+        // 監視を行うディレクトリに作成した QueryOptions を設定する(本例はLocalStateフォルダ)
+        // 戻り値として StorageFileQueryResult のインスタンスが取得できる
+        _queryResult = _watchingFolderService.WatchingFolder.CreateFileQueryWithOptions(queryOptions);
+
+        // イベントを登録
+        _queryResult.ContentsChanged += FileQueryResult_Changed;
+
+        // 監視を開始する
+        await _queryResult.GetFilesAsync();
+    }
+
+    private async void FileQueryResult_Changed(Windows.Storage.Search.IStorageQueryResultBase sender, object args)
+    {
+        await Task.Run(() =>
+        {
+            DispatcherQueue.TryEnqueue(async () =>
+            {
+                await UpdateGridList();
+            });
+        });
     }
 }

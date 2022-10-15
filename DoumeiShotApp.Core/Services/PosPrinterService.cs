@@ -8,22 +8,63 @@ namespace DoumeiShotApp.Core.Services;
 
 public class PosPrinterService : IPosPrinterService
 {
-    private ImmediateNetworkPrinter _printer;
+    private ImmediateNetworkPrinter _networkPrinter;
+    private SerialPrinter _serialPrinter;
     public PosPrinterService()
     {
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
     }
 
-    public void ConnectPrinter()
+    private static bool ValidateIPv4(string ipString)
     {
-        // _printer = new SerialPrinter(portName: "COM2", baudRate: 115200);
-        _printer = new ImmediateNetworkPrinter(new ImmediateNetworkPrinterSettings()
+        if (string.IsNullOrWhiteSpace(ipString))
         {
-            ConnectionString = "192.168.1.240:9100",
-            PrinterName = "TestPrinter"
-        });
+            return false;
+        }
 
-        if (_printer == null)
+        var splitValues = ipString.Split('.');
+        if (splitValues.Length != 4)
+        {
+            return false;
+        }
+
+        byte tempForParsing;
+
+        return splitValues.All(r => byte.TryParse(r, out tempForParsing));
+    }
+
+    public void ConnectPrinter(int method, string target)
+    {
+        _networkPrinter = null;
+        if (_serialPrinter != null) { _serialPrinter.Dispose(); }
+
+        if (target == null)
+        {
+            throw new Exception("TARGET_NULL");
+        }
+        else if (method == 0)
+        {
+            _serialPrinter = new SerialPrinter(portName: target, baudRate: 115200);
+        }
+        else if (method == 1)
+        {
+            if (!ValidateIPv4(target))
+            {
+                throw new Exception("IPADDRESS_ILLEGAL");
+            }
+
+            _networkPrinter = new ImmediateNetworkPrinter(new ImmediateNetworkPrinterSettings()
+            {
+                ConnectionString = $"{target}:9100",
+                PrinterName = "PosPrinter"
+            });
+        }
+        else
+        {
+            throw new Exception("UNKNOWN_METHOD");
+        }
+
+        if ((method == 0 && _serialPrinter == null) || (method == 1 && _networkPrinter == null))
         {
             throw new Exception("PRINTER_NOT_RESPONSED");
         }
@@ -31,11 +72,8 @@ public class PosPrinterService : IPosPrinterService
 
     public void PrintQRCode(string url, DateTime expired)
     {
-        if (_printer == null) ConnectPrinter();
         var e = new EPSON();
-
-        _printer.WriteAsync( // or, if using and immediate printer, use await printer.WriteAsync
-          ByteSplicer.Combine(
+        var printBody = ByteSplicer.Combine(
               // SJIS対応部分
               new byte[3] {
                 28, 67, 1
@@ -48,18 +86,32 @@ public class PosPrinterService : IPosPrinterService
             e.PrintLine(""),
             ConvertToSJISLine("早稲田祭2022 同盟ショット"),
             e.PrintLine(""),
-            e.PrintLine(""),
-            e.PrintQRCode(url, size: Size2DCode.LARGE),
+            e.PrintQRCode(url, size: Size2DCode.NORMAL),
             e.PrintLine(""),
             ConvertToSJISLine("有効期限：" + expired.ToString()),
+            e.PrintLine(""),
+            ConvertToSJISLine("画像を長押しし「\"写真\"に保存」または「画像をダウンロード」より保存して下さい。"),
             e.PrintLine(""),
             ConvertToSJISLine("※有効期限を過ぎるとアクセスができなくなりますので、早めの"),
             ConvertToSJISLine("ダウンロードをお願いします。"),
             e.PrintLine(""),
             e.PrintLine(""),
+            e.FeedLines(2),
             e.PartialCutAfterFeed(5)
-          )
-        );
+          );
+
+        if (_serialPrinter != null)
+        {
+            _serialPrinter.Write(printBody);
+        }
+        else if (_networkPrinter != null)
+        {
+            _networkPrinter.WriteAsync(printBody);
+        }
+        else
+        {
+            throw new Exception("PRINTER_NOT_INITIALIZED");
+        }
     }
 
     private byte[] ConvertToSJISLine(string text)
