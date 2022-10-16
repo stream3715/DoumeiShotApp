@@ -1,23 +1,15 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-
-using DoumeiShotApp.Contracts.ViewModels;
-using DoumeiShotApp.Contracts.Services;
-using DoumeiShotApp.Models;
-using Microsoft.UI.Xaml.Media.Imaging;
-using System.Drawing;
-using DoumeiShotApp.Core.Contracts.Services;
-using Windows.Storage;
-using Windows.Storage.Pickers;
-using CommunityToolkit.Mvvm.Input;
+﻿using System.Diagnostics;
 using System.Windows.Input;
-using DoumeiShotApp.Services;
-using Microsoft.UI.Xaml.Controls;
-using System.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using DoumeiShotApp.Contracts.Services;
+using DoumeiShotApp.Contracts.ViewModels;
+using DoumeiShotApp.Core.Contracts.Services;
+using DoumeiShotApp.Models;
 using Microsoft.UI.Xaml;
-using System.Reflection;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.Windows.ApplicationModel.Resources;
-using DoumeiShotApp.Core.Services;
-using static CommunityToolkit.WinUI.UI.Animations.Expressions.ExpressionValues;
 
 namespace DoumeiShotApp.ViewModels;
 

@@ -2,7 +2,6 @@
 using DoumeiShotApp.Core.Contracts.Services;
 using ESCPOS_NET;
 using ESCPOS_NET.Emitters;
-using ESCPOS_NET.Emitters.BaseCommandValues;
 using ESCPOS_NET.Utilities;
 
 namespace DoumeiShotApp.Core.Services;

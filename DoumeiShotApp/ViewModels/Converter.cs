@@ -8,10 +8,8 @@ public class ThumbnailToImageConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {
-        BitmapImage image = new();
-
         var thumbnail = (StorageItemThumbnail)value;
-        image = new BitmapImage();
+        var image = new BitmapImage();
         image.SetSource(thumbnail);
         thumbnail.Dispose();
 

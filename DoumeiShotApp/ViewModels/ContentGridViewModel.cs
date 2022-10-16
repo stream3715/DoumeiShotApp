@@ -7,12 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using DoumeiShotApp.Contracts.Services;
 using DoumeiShotApp.Contracts.ViewModels;
 using DoumeiShotApp.Models;
-using DoumeiShotApp.Services;
 using Microsoft.UI.Dispatching;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Media.Imaging;
-using Windows.Storage;
-using Windows.Storage.FileProperties;
 
 namespace DoumeiShotApp.ViewModels;
 

@@ -6,7 +6,6 @@ using CommunityToolkit.Mvvm.Input;
 
 using DoumeiShotApp.Contracts.Services;
 using DoumeiShotApp.Core.Contracts.Services;
-using DoumeiShotApp.Core.Services;
 using DoumeiShotApp.Helpers;
 
 using Microsoft.UI.Xaml;

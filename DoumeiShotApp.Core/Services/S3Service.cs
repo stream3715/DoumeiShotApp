@@ -1,12 +1,10 @@
-﻿using System.Text;
-using Amazon.Runtime.CredentialManagement;
+﻿using Amazon;
 using Amazon.Runtime;
+using Amazon.Runtime.CredentialManagement;
 using Amazon.S3;
-using DoumeiShotApp.Core.Contracts.Services;
-using Newtonsoft.Json;
-using Amazon;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
+using DoumeiShotApp.Core.Contracts.Services;
 
 namespace DoumeiShotApp.Core.Services;
 public class S3Service : IS3Service
