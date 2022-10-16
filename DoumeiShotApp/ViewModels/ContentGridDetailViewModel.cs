@@ -229,7 +229,7 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
 
             try
             {
-                _posPrinterService.ConnectPrinter(method, target);
+                await _posPrinterService.ConnectPrinter(method, target);
                 _posPrinterService.PrintQRCode(url, expires);
             }
             catch (Exception)
@@ -266,7 +266,7 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
 
             try
             {
-                _posPrinterService.ConnectPrinter(method, target);
+                await _posPrinterService.ConnectPrinter(method, target);
                 _posPrinterService.PrintQRCode(url, expires);
             }
             catch (Exception)
