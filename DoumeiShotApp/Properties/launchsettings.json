@@ -1,8 +1,7 @@
 {
-  "profiles": {
-    "DoumeiShotApp (Unpackaged)": {
-      "commandName": "Project",
-      "nativeDebugging": false
+    "profiles": {
+      "DoumeiShotApp (Unpackaged)": {
+        "commandName": "Project"
+      }
     }
-  }
 }
