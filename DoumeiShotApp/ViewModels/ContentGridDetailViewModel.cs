@@ -183,7 +183,7 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
 
     private string OverlayImage(string baseImagePath, string coverImagePath)
     {
-        return _imageEditService.OverlayImage(baseImagePath, coverImagePath);
+        return _imageEditService.OverlayImageAsync(baseImagePath, coverImagePath);
     }
 
     private async void UploadFramedImage()

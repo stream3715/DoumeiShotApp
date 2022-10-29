@@ -2,5 +2,5 @@
 
 public interface IImageEditService
 {
-    string OverlayImage(string baseImagePath, string coverImagePath);
+    string OverlayImageAsync(string baseImagePath, string coverImagePath);
 }

@@ -39,7 +39,20 @@ public class WatchingFolderService : IWatchingFolderService
     private async Task LoadFolderPathfromSettingsAsync()
     {
         var folderPath = await _localSettingsService.ReadSettingAsync<string>(SettingsKey);
-        WatchingFolder = folderPath != null ? await StorageFolder.GetFolderFromPathAsync(folderPath) : null;
+        if(folderPath == null)
+        {
+            WatchingFolder = null;
+        } else
+        {
+            try
+            {
+                var folderValueFromSettings = await StorageFolder.GetFolderFromPathAsync(folderPath);
+                WatchingFolder = folderValueFromSettings != null ? folderValueFromSettings : null;
+            } catch
+            {
+                WatchingFolder = null;
+            }            
+        }
     }
 
     private async Task SaveFolderPathInSettingsAsync(StorageFolder folder)
