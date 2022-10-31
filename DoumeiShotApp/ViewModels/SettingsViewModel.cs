@@ -1,4 +1,6 @@
 ﻿using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using System.Windows.Input;
 
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -19,10 +21,10 @@ namespace DoumeiShotApp.ViewModels;
 
 public class SettingsViewModel : ObservableRecipient
 {
-    private readonly IThemeSelectorService _themeSelectorService;
     private readonly IWatchingFolderService _watchingFolderService;
     private readonly IFrameImageSelectorService _frameImageSelectorService;
     private readonly IPosPrinterService _posPrinterService;
+    private readonly IS3Service _s3Service;
     private readonly IPrinterSelectorService _printerSelectorService;
     private StorageFolder? _watchingFolder;
     private string _selectedFolderPath;
@@ -84,6 +86,11 @@ public class SettingsViewModel : ObservableRecipient
         get;
     }
 
+    public ICommand WipeS3BucketCommand
+    {
+        get;
+    }
+
     public RoutedEventHandler PickUSBHandler
     {
         get;
@@ -112,18 +119,18 @@ public class SettingsViewModel : ObservableRecipient
     }
 
     public SettingsViewModel(
-        IThemeSelectorService themeSelectorService,
         IWatchingFolderService watchingFolderService,
         IFrameImageSelectorService frameImageSelectorService,
         IPosPrinterService posPrinterService,
-        IPrinterSelectorService printerSelectorService)
+        IPrinterSelectorService printerSelectorService,
+        IS3Service s3Service)
     {
         // Service init
-        _themeSelectorService = themeSelectorService;
         _watchingFolderService = watchingFolderService;
         _frameImageSelectorService = frameImageSelectorService;
         _printerSelectorService = printerSelectorService;
         _posPrinterService = posPrinterService;
+        _s3Service = s3Service;
 
         // internal var init
         _watchingFolder = null;
@@ -134,10 +141,10 @@ public class SettingsViewModel : ObservableRecipient
         // Button init
         _selectedFolderPath = (_watchingFolderService.WatchingFolder != null && _watchingFolderService.WatchingFolder.Path != null) ? _watchingFolderService.WatchingFolder.Path : "未設定";
         _selectedFrameImagePath = _frameImageSelectorService.ImagePath != string.Empty ? _frameImageSelectorService.ImagePath : "未設定";
-        
+
         ConnectionMethodID = _printerSelectorService.Method;
         ConnectionTarget = _printerSelectorService.Target;
-        
+
         _selectedFrameImagePath = _frameImageSelectorService.ImagePath != string.Empty ? _frameImageSelectorService.ImagePath : "未設定";
 
         PickSavePosPrinterCommand = new RelayCommand<PosPrinter>(
@@ -211,6 +218,79 @@ public class SettingsViewModel : ObservableRecipient
                 PrinterSettingsUSBVisibility = Visibility.Collapsed;
                 PrinterSettingsEthernetVisibility = Visibility.Visible;
             });
+
+        WipeS3BucketCommand = new RelayCommand<string>(
+            async (param) =>
+            {
+                var contentDialog = new ContentDialog
+                {
+                    Title = "警告",
+                    Content = "このコマンドはクラウド・ローカルの全画像を消去します。本当によろしいですか？",
+                    PrimaryButtonText = "OK",
+                    SecondaryButtonText = "キャンセル",
+                    XamlRoot = XamlRoot!
+                };
+
+                var result = await contentDialog.ShowAsync();
+                if (result == ContentDialogResult.Secondary) { return; }
+
+                var text = await InputTextDialogAsync("再確認", "パスワードを入力してください。", XamlRoot!);
+                if (text == null) { return; }
+
+                var textHash = GetHashString(text, SHA512.Create());
+                if (textHash != "01B7949021DBA875A18F060488B571A95A63573E60401FFEBE3EFC1B84E00966BAEA1BC9E659038164BE65CC8CBF95A068E5600CC8DC365409BE7AEF50642386")
+                {
+                    await new ContentDialog
+                    {
+                        Title = "警告",
+                        Content = "パスワードが間違っています。",
+                        PrimaryButtonText = "OK",
+                        XamlRoot = XamlRoot!
+                    }.ShowAsync();
+                }
+                else
+                {
+                    await _s3Service.WipeBucket();
+                    Delete(_selectedFolderPath);
+                    await new ContentDialog
+                    {
+                        Title = "消去完了",
+                        Content = "ストレージの初期化が完了しました。",
+                        PrimaryButtonText = "OK",
+                        XamlRoot = XamlRoot!
+                    }.ShowAsync();
+                }
+
+            });
+    }
+
+    private void Delete(string targetDirectoryPath)
+    {
+        if (!Directory.Exists(targetDirectoryPath))
+        {
+            return;
+        }
+
+        //ディレクトリ以外の全ファイルを削除
+        var filePaths = Directory.GetFiles(targetDirectoryPath);
+        foreach (var filePath in filePaths)
+        {
+            File.SetAttributes(filePath, System.IO.FileAttributes.Normal);
+            File.Delete(filePath);
+        }
+
+        //ディレクトリの中のディレクトリも再帰的に削除
+        var directoryPaths = Directory.GetDirectories(targetDirectoryPath);
+        foreach (var directoryPath in directoryPaths)
+        {
+            Delete(directoryPath);
+        }
+
+        //中が空になったらディレクトリ自身も削除
+        if (targetDirectoryPath != _selectedFolderPath)
+        {
+            Directory.Delete(targetDirectoryPath, false);
+        }
     }
 
     private static string GetVersionDescription()
@@ -229,5 +309,44 @@ public class SettingsViewModel : ObservableRecipient
         }
 
         return $"{"AppDisplayName".GetLocalized()} - {version.Major}.{version.Minor}.{version.Build}.{version.Revision}";
+    }
+
+    private async Task<string?> InputTextDialogAsync(string title, string body, XamlRoot xamlRoot)
+    {
+        TextBox inputTextBox = new TextBox();
+        inputTextBox.AcceptsReturn = false;
+        inputTextBox.Height = 32;
+        inputTextBox.PlaceholderText = body;
+        ContentDialog dialog = new ContentDialog();
+        dialog.Content = inputTextBox;
+        dialog.Title = title;
+        dialog.IsSecondaryButtonEnabled = true;
+        dialog.PrimaryButtonText = "OK";
+        dialog.SecondaryButtonText = "キャンセル";
+        dialog.XamlRoot = xamlRoot;
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            return inputTextBox.Text;
+        else
+            return null;
+    }
+
+    public static string GetHashString(string text, HashAlgorithm algorithm)
+    {
+        // 文字列をバイト型配列に変換する
+        var data = Encoding.UTF8.GetBytes(text);
+
+        // ハッシュ値を計算する
+        var bs = algorithm.ComputeHash(data);
+
+        // リソースを解放する
+        algorithm.Clear();
+
+        // バイト型配列を16進数文字列に変換
+        var result = new StringBuilder();
+        foreach (var b in bs)
+        {
+            result.Append(b.ToString("X2"));
+        }
+        return result.ToString();
     }
 }

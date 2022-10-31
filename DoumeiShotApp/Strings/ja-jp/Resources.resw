@@ -189,4 +189,10 @@
   <data name="Settings_PrinterConnectMethodRadio.Header" xml:space="preserve">
     <value>接続方法</value>
   </data>
+  <data name="Settings_WipeBucket.Text" xml:space="preserve">
+    <value>管理用コマンド</value>
+  </data>
+  <data name="Settings_WipeBucketButton.Content" xml:space="preserve">
+    <value>ストレージ領域を空にする</value>
+  </data>
 </root>

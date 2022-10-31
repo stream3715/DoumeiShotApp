@@ -45,7 +45,7 @@
                     </Grid.ColumnDefinitions>
 
                     <TextBlock x:Uid="Settings_FrameImagePath" Text="{x:Bind ViewModel.SelectedFrameImagePath, Mode=OneWay}" VerticalAlignment="Center" />
-                    
+
                     <Button Grid.Column="1"
                         x:Uid="Settings_FrameImageSelect"
                         Command="{x:Bind ViewModel.PickFrameCommand}"
@@ -80,6 +80,33 @@
                         FontSize="15">
                 </Button>
             </Grid>
+
+            <StackPanel>
+                <TextBlock x:Uid="Settings_WipeBucket" Style="{ThemeResource SubtitleTextBlockStyle}" Margin="{StaticResource SmallTopMargin}" />
+                <Button
+                    x:Uid="Settings_WipeBucketButton"
+                    Margin="{StaticResource SmallTopMargin}"
+                    Command="{x:Bind ViewModel.WipeS3BucketCommand}" >
+                    <Button.Resources>
+                        <ResourceDictionary>
+                            <ResourceDictionary.ThemeDictionaries>
+                                <ResourceDictionary x:Key="Dark">
+                                    <SolidColorBrush x:Key="ButtonForeground" Color="White" />
+                                    <SolidColorBrush x:Key="ButtonBackground" Color="Red" />
+                                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="Red"/>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="Black"/>
+                                </ResourceDictionary>
+                                <ResourceDictionary x:Key="Light">
+                                    <SolidColorBrush x:Key="ButtonForeground" Color="White" />
+                                    <SolidColorBrush x:Key="ButtonBackground" Color="Red" />
+                                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="Red"/>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="Black"/>
+                                </ResourceDictionary>
+                            </ResourceDictionary.ThemeDictionaries>
+                        </ResourceDictionary>
+                    </Button.Resources>
+                </Button>
+            </StackPanel>
 
             <TextBlock x:Uid="Settings_About" Style="{ThemeResource SubtitleTextBlockStyle}" Margin="{StaticResource SmallTopMargin}" />
 

@@ -11,4 +11,6 @@ public interface IS3Service
     (string, DateTime) GetPreSignedURLFromFolderPath(string folderPath);
 
     void Delete(string filePath);
+
+    Task<bool> WipeBucket();
 }

@@ -125,4 +125,61 @@ public class S3Service : IS3Service
     }
 
     public void Delete(string filePath) => throw new NotImplementedException();
+    public async Task<bool> WipeBucket()
+    {
+        var fileListResult = await ListBucketContentsAsync();
+        if (fileListResult == null) return false;
+
+        // 並列実行オプション
+        var options = new ParallelOptions();
+        options.MaxDegreeOfParallelism = 100; // 最大実行数
+        var keyVersionToDelete = new List<KeyVersion>();
+
+        Parallel.ForEach(fileListResult, options, s3Object =>
+        {
+            keyVersionToDelete.Add(new KeyVersion() { Key = s3Object.Key });
+        });
+
+        var result = await _mClient.DeleteObjectsAsync(new DeleteObjectsRequest
+        {
+            BucketName = BUCKET_NAME,
+            Objects = keyVersionToDelete
+        });
+
+        return result.HttpStatusCode < System.Net.HttpStatusCode.Ambiguous;
+    }
+
+    private async Task<List<S3Object>> ListBucketContentsAsync()
+    {
+        var fileList = new List<S3Object>();
+        try
+        {
+            var request = new ListObjectsV2Request
+            {
+                BucketName = BUCKET_NAME,
+            };
+
+            var response = new ListObjectsV2Response();
+
+            do
+            {
+                response = await _mClient.ListObjectsV2Async(request);
+
+                response.S3Objects.ForEach(obj => fileList.Add(obj));
+
+                // If the response is truncated, set the request ContinuationToken
+                // from the NextContinuationToken property of the response.
+                request.ContinuationToken = response.NextContinuationToken;
+            }
+            while (response.IsTruncated);
+
+            return fileList;
+        }
+        catch (AmazonS3Exception ex)
+        {
+            Console.WriteLine($"Error encountered on server. Message:'{ex.Message}' getting list of objects.");
+            return null;
+        }
+    }
+
 }
