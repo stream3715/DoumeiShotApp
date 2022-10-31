@@ -28,19 +28,23 @@ public class ImageEditService : IImageEditService
         var x = (newImage.Width - (scale * rotatedBaseImage.Width)) / 2;
         var y = (newImage.Height - (scale * rotatedBaseImage.Height)) / 2;
 
-        newImage.Dispose();
-
         var canvas = surface.Canvas;
-
-
         var y_offset = 50;
 
         SKRect destRect = new(0, y_offset, scale * rotatedBaseImage.Width, y_offset + scale * rotatedBaseImage.Height);
+        SKPaint skPaint = new()
+        {
+            TextSize = 90.0f,
+            IsAntialias = true,
+            Color = new SKColor(0, 0, 0)
+        };
 
         canvas.DrawBitmap(rotatedBaseImage, destRect);
         canvas.DrawBitmap(coverImage, 0, 0);
+        canvas.DrawText(DateTime.Now.ToString(), newImage.Width * 0.01f, newImage.Height * 0.995f, skPaint);
         canvas.Flush();
 
+        newImage.Dispose();
         coverImage.Dispose();
 
         var outImageData = surface.Snapshot().Encode(SKEncodedImageFormat.Jpeg, 100);
