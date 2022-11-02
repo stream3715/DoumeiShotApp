@@ -188,19 +188,28 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
 
     private async void UploadFramedImage()
     {
-        File.Copy(Item!.File!.Path, Item!.File!.Path + "_orig", true);
-        File.Copy(_originalFrameImagePath, Item!.File!.Path, true);
+        if (!(await CopyFileAsync(Item!.File!.Path, Item!.File!.Path + "_orig")))
+        {
+            await ShowErrorDialog("ファイルの読み込みに失敗しました");
+            return;
+        };
+        if (!(await CopyFileAsync(_originalFrameImagePath, Item!.File!.Path)))
+        {
+            await ShowErrorDialog("ファイルの書き込みに失敗しました");
+            return;
+        };
 
         var (url, expires) = _s3Service.Upload(Item!.File!.Path);
-        if(url != null)
+        if (url != null)
         {
             Item!.IsUploaded = true;
-        } else
+        }
+        else
         {
             File.Move(Item!.File!.Path + "_orig", Item!.File!.Path, true);
-            throw new Exception("UPLOAD_FAILED");
+            await ShowErrorDialog("アップロードに失敗しました。接続を確認してください");
         }
-        
+
         File.Delete(Item!.File!.Path + "_orig");
         File.Delete(_originalFrameImagePath);
 
@@ -235,6 +244,56 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
         }
         ButtonCancel();
         return;
+    }
+
+    private async Task ShowErrorDialog(string text)
+    {
+        var contentDialog = new ContentDialog
+        {
+            Title = "エラー",
+            Content = text,
+            CloseButtonText = "OK",
+            XamlRoot = XamlRoot!
+        };
+
+        await contentDialog.ShowAsync();
+        return;
+    }
+
+    private async Task<bool> CopyFileAsync(string sourcePath, string destinationPath)
+    {
+        using Stream? source = WaitForFile(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        using Stream? destination = WaitForFile(destinationPath, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
+        if (source == null || destination == null)
+        {
+            return false;
+        }
+
+        await source.CopyToAsync(destination);
+        return true;
+    }
+
+    private static FileStream? WaitForFile(string fullPath, FileMode mode, FileAccess access, FileShare share)
+    {
+        for (var numTries = 0; numTries < 10; numTries++)
+        {
+            FileStream? fs = null;
+            try
+            {
+                fs = new FileStream(fullPath, mode, access, share);
+                return fs;
+            }
+            catch (IOException)
+            {
+                if (fs != null)
+                {
+                    fs.Dispose();
+                }
+                Thread.Sleep(50);
+            }
+        }
+
+        return null;
     }
 
     private async void ReprintFramedUri()
