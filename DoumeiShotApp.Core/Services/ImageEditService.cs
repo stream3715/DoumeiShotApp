@@ -11,7 +11,8 @@ public class ImageEditService : IImageEditService
         using (var baseImage = SKBitmap.Decode(baseImagePath))
         {
             SKEncodedOrigin baseOrientation;
-            using (var inputStream = new SKManagedStream(File.OpenRead(baseImagePath)))
+            using (var fstream = File.OpenRead(baseImagePath))
+            using (var inputStream = new SKManagedStream(fstream))
             {
                 using var codec = SKCodec.Create(inputStream);
                 baseOrientation = codec.EncodedOrigin;
@@ -44,6 +45,7 @@ public class ImageEditService : IImageEditService
         canvas.DrawText(DateTime.Now.ToString(), newImage.Width * 0.01f, newImage.Height * 0.995f, skPaint);
         canvas.Flush();
 
+        rotatedBaseImage.Dispose();
         newImage.Dispose();
         coverImage.Dispose();
 
