@@ -20,6 +20,7 @@ public class ContentGridViewModel : ObservableRecipient, INavigationAware
     private readonly IPrinterSelectorService _printerSelectorService;
 
     private Windows.Storage.Search.StorageFileQueryResult? _queryResult;
+    private bool _isDesc = true;
 
     public ICommand ItemClickCommand
     {
@@ -32,11 +33,22 @@ public class ContentGridViewModel : ObservableRecipient, INavigationAware
     }
 
     public ObservableCollection<TakenPhoto> Source { get; } = new ObservableCollection<TakenPhoto>();
+    public bool IsDesc
+    {
+        get => _isDesc;
+        internal set => SetProperty(ref _isDesc, value);
+    }
+
+    public int SortOrderIndex
+    {
+        get => _isDesc ? 0 : 1;
+        internal set => SetProperty(ref _isDesc, Convert.ToBoolean(value));
+    }
 
     public ContentGridViewModel(
-        INavigationService navigationService, 
-        ITakenPhotoService takenPhotoService, 
-        IWatchingFolderService watchingFolderService, 
+        INavigationService navigationService,
+        ITakenPhotoService takenPhotoService,
+        IWatchingFolderService watchingFolderService,
         IFrameImageSelectorService frameImageSelectorService,
         IPrinterSelectorService printerSelectorService)
     {
@@ -68,6 +80,7 @@ public class ContentGridViewModel : ObservableRecipient, INavigationAware
         Source.Clear();
 
         var pictures = await _takenPhotoService.GetContentGridDataAsync();
+        if (IsDesc) pictures = pictures.Reverse().ToArray();
 
         foreach (var item in pictures)
         {
@@ -86,7 +99,7 @@ public class ContentGridViewModel : ObservableRecipient, INavigationAware
 
     private async Task FileQueryInit()
     {
-        if(_watchingFolderService.WatchingFolder == null)
+        if (_watchingFolderService.WatchingFolder == null)
         {
             return;
         }
