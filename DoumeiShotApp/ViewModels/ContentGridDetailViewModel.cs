@@ -32,6 +32,7 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
 
     private string _uploadButtonText;
     private ICommand? _uploadButtonCommand;
+    private bool _isButtonEnabled;
 
     public XamlRoot? XamlRoot
     {
@@ -62,6 +63,12 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
         set => SetProperty(ref _uploadButtonText, value);
     }
 
+    public bool IsButtonEnabled
+    {
+        get => _isButtonEnabled;
+        set => SetProperty(ref _isButtonEnabled, value);
+    }
+
     public ContentGridDetailViewModel(
         ITakenPhotoService takenPhotoService,
         IImageEditService imageEditService,
@@ -89,6 +96,8 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
 
         UploadCommand = null;
         CancelCommand = new RelayCommand(ButtonCancel);
+        IsButtonEnabled = true;
+
         ButtonUploadContent = string.Empty;
     }
 
@@ -105,73 +114,73 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
 
     public async void OnNavigatedTo(object parameter)
     {
-        await _printerSelectorService.InitializeAsync();
-        if (parameter is string filePath)
-        {
-            // Get image data
-            var data = await _takenPhotoService.GetContentGridDataAsync();
-            try
+            await _printerSelectorService.InitializeAsync();
+            if (parameter is string filePath)
             {
-                Item = data.First(i => i.File!.Path == filePath);
-            }
-            catch (Exception)
-            {
-                var contentDialog = new ContentDialog
+                // Get image data
+                var data = await _takenPhotoService.GetContentGridDataAsync();
+                try
                 {
-                    Title = "エラー",
-                    Content = "画像が見つかりません。",
-                    CloseButtonText = "OK",
-                    XamlRoot = XamlRoot!
-                };
-
-                await contentDialog.ShowAsync();
-                ButtonCancel();
-                return;
-            }
-
-            // Overlay frame image
-            var framePath = _framedImageSelectorService.ImagePath;
-            if (framePath == string.Empty)
-            {
-                var contentDialog = new ContentDialog
+                    Item = data.First(i => i.File!.Path == filePath);
+                }
+                catch (Exception)
                 {
-                    Title = "エラー",
-                    Content = "フレーム画像が指定されていません。\n設定よりファイルを指定して下さい。",
-                    CloseButtonText = "OK",
-                    XamlRoot = XamlRoot!
-                };
+                    var contentDialog = new ContentDialog
+                    {
+                        Title = "エラー",
+                        Content = "画像が見つかりません。",
+                        CloseButtonText = "OK",
+                        XamlRoot = XamlRoot!
+                    };
 
-                await contentDialog.ShowAsync();
-                ButtonCancel();
-            }
-            else
-            {
-                // Check if image is already uploaded
-                var framedFileName = Path.GetFileName(filePath);
-                if (await _s3Service.CheckFileExists(framedFileName))
+                    await contentDialog.ShowAsync();
+                    ButtonCancel();
+                    return;
+                }
+
+                // Overlay frame image
+                var framePath = _framedImageSelectorService.ImagePath;
+                if (framePath == string.Empty)
                 {
-                    Item.IsUploaded = true;
-                    ButtonUploadContent = _resourceLoader.GetString("SimpleTextReprint");
-                    UploadCommand = new RelayCommand(ReprintFramedUri);
+                    var contentDialog = new ContentDialog
+                    {
+                        Title = "エラー",
+                        Content = "フレーム画像が指定されていません。\n設定よりファイルを指定して下さい。",
+                        CloseButtonText = "OK",
+                        XamlRoot = XamlRoot!
+                    };
 
-                    FramedImage.UriSource = new Uri(filePath);
-                    _originalFrameImagePath = filePath;
+                    await contentDialog.ShowAsync();
+                    ButtonCancel();
                 }
                 else
                 {
-                    Item.IsUploaded = false;
-                    ButtonUploadContent = _resourceLoader.GetString("SimpleTextUpload");
-                    UploadCommand = new RelayCommand(UploadFramedImage);
+                    // Check if image is already uploaded
+                    var framedFileName = Path.GetFileName(filePath);
+                    if (await _s3Service.CheckFileExists(framedFileName))
+                    {
+                        Item.IsUploaded = true;
+                        ButtonUploadContent = _resourceLoader.GetString("SimpleTextReprint");
+                        UploadCommand = new RelayCommand(ReprintFramedUri);
 
-                    var tmpFile = OverlayImage(filePath, framePath);
-                    _framedImagePath = tmpFile;
-                    FramedImage.UriSource = new Uri(_framedImagePath);
+                        FramedImage.UriSource = new Uri(filePath);
+                        _originalFrameImagePath = filePath;
+                    }
+                    else
+                    {
+                        Item.IsUploaded = false;
+                        ButtonUploadContent = _resourceLoader.GetString("SimpleTextUpload");
+                        UploadCommand = new RelayCommand(UploadFramedImage);
 
-                    _originalFrameImagePath = tmpFile;
+                        var tmpFile = OverlayImage(filePath, framePath);
+                        _framedImagePath = tmpFile;
+                        FramedImage.UriSource = new Uri(_framedImagePath);
+
+                        _originalFrameImagePath = tmpFile;
+                    }
                 }
             }
         }
-    }
 
     public void OnNavigatedFrom()
     {
@@ -188,62 +197,69 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
 
     private async void UploadFramedImage()
     {
-        if (!(await CopyFileAsync(Item!.File!.Path, Item!.File!.Path + "_orig")))
+        IsButtonEnabled = false;
+        try
         {
-            await ShowErrorDialog("ファイルの読み込みに失敗しました");
-            return;
-        };
-        if (!(await CopyFileAsync(_originalFrameImagePath, Item!.File!.Path)))
-        {
-            await ShowErrorDialog("ファイルの書き込みに失敗しました");
-            return;
-        };
-
-        var (url, expires) = _s3Service.Upload(Item!.File!.Path);
-        if (url != null)
-        {
-            Item!.IsUploaded = true;
-        }
-        else
-        {
-            File.Move(Item!.File!.Path + "_orig", Item!.File!.Path, true);
-            await ShowErrorDialog("アップロードに失敗しました。接続を確認してください");
-        }
-
-        File.Delete(Item!.File!.Path + "_orig");
-        File.Delete(_originalFrameImagePath);
-
-        var contentDialog = new ContentDialog
-        {
-            Title = "アップロード完了",
-            Content = "アップロードが完了しました。\n" + url,
-            PrimaryButtonText = "印字",
-            SecondaryButtonText = "開く",
-            XamlRoot = XamlRoot!
-        };
-
-        var result = await contentDialog.ShowAsync();
-        if (result == ContentDialogResult.Primary)
-        {
-            var method = _printerSelectorService.Method;
-            var target = _printerSelectorService.Target;
-
-            try
+            if (!(await CopyFileAsync(Item!.File!.Path, Item!.File!.Path + "_orig")))
             {
-                await _posPrinterService.ConnectPrinter(method, target);
-                _posPrinterService.PrintQRCode(url, expires);
-            }
-            catch (Exception)
+                await ShowErrorDialog("ファイルの読み込みに失敗しました");
+                return;
+            };
+            if (!(await CopyFileAsync(_originalFrameImagePath, Item!.File!.Path)))
             {
+                await ShowErrorDialog("ファイルの書き込みに失敗しました");
+                return;
+            };
 
+            var (url, expires) = _s3Service.Upload(Item!.File!.Path);
+            if (url != null)
+            {
+                Item!.IsUploaded = true;
             }
-        }
-        else if (result == ContentDialogResult.Secondary)
+            else
+            {
+                await MoveFileAsync(Item!.File!.Path + "_orig", Item!.File!.Path);
+                await ShowErrorDialog("アップロードに失敗しました。接続を確認してください");
+                return;
+            }
+
+            File.Delete(Item!.File!.Path + "_orig");
+            File.Delete(_originalFrameImagePath);
+
+            var contentDialog = new ContentDialog
+            {
+                Title = "アップロード完了",
+                Content = "アップロードが完了しました。\n" + url,
+                PrimaryButtonText = "印字",
+                SecondaryButtonText = "開く",
+                XamlRoot = XamlRoot!
+            };
+
+            var result = await contentDialog.ShowAsync();
+            if (result == ContentDialogResult.Primary)
+            {
+                var method = _printerSelectorService.Method;
+                var target = _printerSelectorService.Target;
+
+                try
+                {
+                    await _posPrinterService.ConnectPrinter(method, target);
+                    _posPrinterService.PrintQRCode(url, expires);
+                }
+                catch (Exception)
+                {
+
+                }
+            }
+            else if (result == ContentDialogResult.Secondary)
+            {
+                OpenUrl(url);
+            }
+            ButtonCancel();
+        } finally
         {
-            OpenUrl(url);
+            IsButtonEnabled = true;
         }
-        ButtonCancel();
-        return;
     }
 
     private async Task ShowErrorDialog(string text)
@@ -260,7 +276,7 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
         return;
     }
 
-    private async Task<bool> CopyFileAsync(string sourcePath, string destinationPath)
+    private static async Task<bool> CopyFileAsync(string sourcePath, string destinationPath)
     {
         using Stream? source = WaitForFile(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read);
         using Stream? destination = WaitForFile(destinationPath, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
@@ -270,6 +286,23 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
         }
 
         await source.CopyToAsync(destination);
+        return true;
+    }
+
+    private async Task<bool> MoveFileAsync(string sourcePath, string destinationPath)
+    {
+        
+        if (!(await CopyFileAsync(sourcePath, destinationPath)))
+        {
+            return false;
+        };
+        try
+        {
+            File.Delete(sourcePath);
+        } catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
         return true;
     }
 
@@ -298,6 +331,7 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
 
     private async void ReprintFramedUri()
     {
+        IsButtonEnabled = false;
         var (url, expires) = _s3Service.GetPreSignedURLFromFolderPath(_originalFrameImagePath);
 
         var contentDialog = new ContentDialog
@@ -330,7 +364,7 @@ public class ContentGridDetailViewModel : ObservableRecipient, INavigationAware
             OpenUrl(url);
         }
         ButtonCancel();
-        return;
+        IsButtonEnabled = true;
     }
 
     private static Process? OpenUrl(string url)

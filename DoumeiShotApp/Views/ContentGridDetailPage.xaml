@@ -15,8 +15,8 @@
 
             <StackPanel x:Name="contentPanel">
                 <Image Source="{x:Bind ViewModel.FramedImage}" Stretch="Uniform" Margin="{StaticResource SmallLeftRightMargin}" MaxHeight="800"/>
-                <Button x:Uid="Shell_Upload" Command="{x:Bind ViewModel.UploadCommand, Mode=OneWay}" Content="{x:Bind ViewModel.ButtonUploadContent, Mode=OneWay}" Margin="{StaticResource SmallTopMargin}"/>
-                <Button x:Uid="Shell_Cancel" Command="{x:Bind ViewModel.CancelCommand}" Margin="{StaticResource SmallTopBottomMargin}"/>
+                <Button x:Uid="Shell_Upload" IsEnabled="{x:Bind ViewModel.IsButtonEnabled, Mode=OneWay}" Command="{x:Bind ViewModel.UploadCommand, Mode=OneWay}" Content="{x:Bind ViewModel.ButtonUploadContent, Mode=OneWay}" Margin="{StaticResource SmallTopMargin}"/>
+                <Button x:Uid="Shell_Cancel" IsEnabled="{x:Bind ViewModel.IsButtonEnabled, Mode=OneWay}" Command="{x:Bind ViewModel.CancelCommand}" Margin="{StaticResource SmallTopBottomMargin}"/>
             </StackPanel>
         </ScrollViewer>
     </Grid>
