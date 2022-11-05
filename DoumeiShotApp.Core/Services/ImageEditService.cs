@@ -98,7 +98,7 @@ public class ImageEditService : IImageEditService
                 }
                 return rotated;
             default:
-                return bitmap;
+                return bitmap.Copy();
         }
     }
 }
